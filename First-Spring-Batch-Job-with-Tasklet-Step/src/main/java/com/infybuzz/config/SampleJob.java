@@ -15,7 +15,10 @@ import org.springframework.context.annotation.Configuration;
 
 import com.infybuzz.listener.FirstJobListener;
 import com.infybuzz.listener.FirstStepListener;
+import com.infybuzz.processor.FirstItemProcessor;
+import com.infybuzz.reader.FirstItemReader;
 import com.infybuzz.service.SecondTasklet;
+import com.infybuzz.writer.FirstItemWriter;
 
 @Configuration
 public class SampleJob {
@@ -34,12 +37,29 @@ public class SampleJob {
 	
 	@Autowired
 	private FirstStepListener firstStepListener;
+	
+	@Autowired
+	private FirstItemReader firstItemReader;
+	
+	@Autowired
+	private FirstItemProcessor firstItemProcessor;
+	
+	@Autowired
+	private FirstItemWriter firstItemWriter;
 
-	@Bean
+	//@Bean
 	public Job firstJob() {
 		return jobBuilderFactory.get("First Job").incrementer(new RunIdIncrementer()).start(firstStep())
 				.next(secondStep())
 				.listener(firstJobListener)
+				.build();
+	}
+	
+	@Bean
+	public Job secondJob() {
+		return jobBuilderFactory.get("Second Job")
+				.incrementer(new RunIdIncrementer())
+				.start(firstChunkStep())
 				.build();
 	}
 
@@ -72,4 +92,15 @@ public class SampleJob {
 
 	}
 
+	@Bean
+	public Step firstChunkStep() {
+
+		return stepBuilderFactory.get("First Chunk Step")
+				.<Integer,Long>chunk(3)
+				.reader(firstItemReader)
+				.processor(firstItemProcessor)
+				.writer(firstItemWriter)
+				.build();
+
+	}
 }

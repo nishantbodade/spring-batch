@@ -67,26 +67,30 @@ public class SampleJob {
 		
 		flatFileItemReader.setResource(fileSystemResource);
 
-		flatFileItemReader.setLineMapper(new DefaultLineMapper<StudentCsv>() {
-			{
-				setLineTokenizer(new DelimitedLineTokenizer("|") {
+		/*
+		 * flatFileItemReader.setLineMapper(new DefaultLineMapper<StudentCsv>() { {
+		 * setLineTokenizer(new DelimitedLineTokenizer("|") {
+		 * 
+		 * { setNames("Id", "First Name", "Last Name", "Email"); //setDelimiter("|"); }
+		 * 
+		 * });
+		 * 
+		 * setFieldSetMapper(new BeanWrapperFieldSetMapper<StudentCsv>() { {
+		 * setTargetType(StudentCsv.class); } }); }
+		 * 
+		 * });
+		 */
 
-					{
-						setNames("Id", "First Name", "Last Name", "Email");
-						//setDelimiter("|");
-					}
-
-				});
-
-				setFieldSetMapper(new BeanWrapperFieldSetMapper<StudentCsv>() {
-					{
-						setTargetType(StudentCsv.class);
-					}
-				});
-			}
-
-		});
-
+		DefaultLineMapper<StudentCsv> defaultLineMapper = new DefaultLineMapper<StudentCsv>();
+		DelimitedLineTokenizer delimitedLineTokenizer = new DelimitedLineTokenizer("|");
+		delimitedLineTokenizer.setNames("Id", "First Name", "Last Name", "Email");
+		
+		defaultLineMapper.setLineTokenizer(delimitedLineTokenizer);
+		BeanWrapperFieldSetMapper<StudentCsv> beanWrapperFieldSetMapper = new BeanWrapperFieldSetMapper<StudentCsv>();
+		beanWrapperFieldSetMapper.setTargetType(StudentCsv.class);
+		defaultLineMapper.setFieldSetMapper(beanWrapperFieldSetMapper);
+		flatFileItemReader.setLineMapper(defaultLineMapper);
+		
 		flatFileItemReader.setLinesToSkip(1);
 
 		return flatFileItemReader;

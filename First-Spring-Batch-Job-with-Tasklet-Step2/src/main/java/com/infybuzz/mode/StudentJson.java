@@ -1,7 +1,9 @@
 package com.infybuzz.mode;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+//ignore the json properties which u dont want to read from json file and map to java class
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class StudentJson {
 	private Long id;
 

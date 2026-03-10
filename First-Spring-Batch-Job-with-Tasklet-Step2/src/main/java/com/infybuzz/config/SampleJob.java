@@ -12,6 +12,8 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.json.JacksonJsonObjectReader;
+import org.springframework.batch.item.json.JsonItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 
 import com.infybuzz.mode.StudentCsv;
+import com.infybuzz.mode.StudentJson;
 import com.infybuzz.processor.FirstItemProcessor;
 import com.infybuzz.reader.FirstItemReader;
 import com.infybuzz.writer.FirstItemWriter;
@@ -50,21 +53,23 @@ public class SampleJob {
 	@Bean
 	public Step firstChunkStep() {
 
-		return stepBuilderFactory.get("First Chunk Step").<StudentCsv, StudentCsv>chunk(3).reader(flatFileItemReader(null))
+		return stepBuilderFactory.get("First Chunk Step").<StudentJson, StudentJson>chunk(3)
+				//.reader(flatFileItemReader(null))
+				.reader(jsonItemReader(null))
 				// .processor(firstItemProcessor)
 				.writer(firstItemWriter).build();
 
 	}
 
 	@StepScope
-	@Bean	
+	@Bean
 	public FlatFileItemReader<StudentCsv> flatFileItemReader(
-			
+
 			@Value("#{jobParameters['inputFile']}") FileSystemResource fileSystemResource
-			
-			) {
+
+	) {
 		FlatFileItemReader<StudentCsv> flatFileItemReader = new FlatFileItemReader<StudentCsv>();
-		
+
 		flatFileItemReader.setResource(fileSystemResource);
 
 		/*
@@ -84,16 +89,31 @@ public class SampleJob {
 		DefaultLineMapper<StudentCsv> defaultLineMapper = new DefaultLineMapper<StudentCsv>();
 		DelimitedLineTokenizer delimitedLineTokenizer = new DelimitedLineTokenizer("|");
 		delimitedLineTokenizer.setNames("Id", "First Name", "Last Name", "Email");
-		
+
 		defaultLineMapper.setLineTokenizer(delimitedLineTokenizer);
 		BeanWrapperFieldSetMapper<StudentCsv> beanWrapperFieldSetMapper = new BeanWrapperFieldSetMapper<StudentCsv>();
 		beanWrapperFieldSetMapper.setTargetType(StudentCsv.class);
 		defaultLineMapper.setFieldSetMapper(beanWrapperFieldSetMapper);
 		flatFileItemReader.setLineMapper(defaultLineMapper);
-		
+
 		flatFileItemReader.setLinesToSkip(1);
 
 		return flatFileItemReader;
 
+	}
+
+	@Bean
+	@StepScope
+	public JsonItemReader<StudentJson> jsonItemReader(
+			@Value("#{jobParameters['inputFile']}") FileSystemResource fileSystemResource
+
+	) {
+
+		JsonItemReader<StudentJson> jsonItemReader = new JsonItemReader<StudentJson>();
+		jsonItemReader.setResource(fileSystemResource);
+		
+		jsonItemReader.setJsonObjectReader(new JacksonJsonObjectReader<StudentJson>(StudentJson.class));
+
+		return jsonItemReader;
 	}
 }

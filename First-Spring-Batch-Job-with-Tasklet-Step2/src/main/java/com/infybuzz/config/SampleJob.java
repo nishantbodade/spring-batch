@@ -1,7 +1,5 @@
 package com.infybuzz.config;
 
-import java.io.File;
-
 import javax.sql.DataSource;
 
 import org.springframework.batch.core.Job;
@@ -17,16 +15,22 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.item.json.JacksonJsonObjectReader;
 import org.springframework.batch.item.json.JsonItemReader;
+import org.springframework.batch.item.xml.StaxEventItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 
 import com.infybuzz.mode.StudentCsv;
 import com.infybuzz.mode.StudentJdbc;
 import com.infybuzz.mode.StudentJson;
+import com.infybuzz.mode.StudentXml;
 import com.infybuzz.processor.FirstItemProcessor;
 import com.infybuzz.reader.FirstItemReader;
 import com.infybuzz.writer.FirstItemWriter;
@@ -51,6 +55,19 @@ public class SampleJob {
 	
 	@Autowired
 	private DataSource dataSource;
+	
+	@Bean
+	@Primary
+	@ConfigurationProperties(prefix = "spring.datasource")
+	public DataSource datasource() {
+		return DataSourceBuilder.create().build();
+	}
+	
+	@Bean
+	@ConfigurationProperties(prefix = "spring.eazyschooldatasource")
+	public DataSource eazyschooldatasource() {
+		return DataSourceBuilder.create().build();
+	}
 
 	@Bean
 	public Job chunkJob() {
@@ -61,10 +78,11 @@ public class SampleJob {
 	@Bean
 	public Step firstChunkStep() {
 
-		return stepBuilderFactory.get("First Chunk Step").<StudentJdbc, StudentJdbc>chunk(3)
+		return stepBuilderFactory.get("First Chunk Step").<StudentXml, StudentXml>chunk(3)
 				//.reader(flatFileItemReader(null))
 				//.reader(jsonItemReader(null))
-				.reader(jdbcCursorItemReader())
+				//.reader(jdbcCursorItemReader())
+				.reader(staxEventItemReader(null))
 				// .processor(firstItemProcessor)
 				.writer(firstItemWriter).build();
 
@@ -133,7 +151,7 @@ public class SampleJob {
 		JdbcCursorItemReader<StudentJdbc> jdbcCursorItemReader
 		= new JdbcCursorItemReader<StudentJdbc>();
 		
-		jdbcCursorItemReader.setDataSource(dataSource);
+		jdbcCursorItemReader.setDataSource(eazyschooldatasource());
 		
 		jdbcCursorItemReader.setSql("SELECT id, first_name as firstName, last_name as lastName, email FROM student");
 		jdbcCursorItemReader.setRowMapper(new BeanPropertyRowMapper<StudentJdbc>() {
@@ -149,5 +167,24 @@ public class SampleJob {
 		
 		return jdbcCursorItemReader;
 		
+	}
+	
+
+	@StepScope
+	@Bean
+	public StaxEventItemReader<StudentXml> staxEventItemReader(
+			@Value("#{jobParameters['inputFile']}") FileSystemResource fileSystemResource) {
+		StaxEventItemReader<StudentXml> staxEventItemReader = 
+				new StaxEventItemReader<StudentXml>();
+		
+		staxEventItemReader.setResource(fileSystemResource);
+		staxEventItemReader.setFragmentRootElementName("student");
+		staxEventItemReader.setUnmarshaller(new Jaxb2Marshaller() {
+			{
+				setClassesToBeBound(StudentXml.class);
+			}
+		});
+		
+		return staxEventItemReader;
 	}
 }

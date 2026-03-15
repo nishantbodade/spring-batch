@@ -5,15 +5,13 @@ import java.util.List;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
-import com.infybuzz.mode.StudentCsv;
-import com.infybuzz.mode.StudentJdbc;
-import com.infybuzz.mode.StudentJson;
+import com.infybuzz.mode.StudentXml;
 
 @Component
-public class FirstItemWriter implements ItemWriter<StudentJdbc> {
+public class FirstItemWriter implements ItemWriter<StudentXml> {
 
 	@Override
-	public void write(List<? extends StudentJdbc> items) throws Exception {
+	public void write(List<? extends StudentXml> items) throws Exception {
 		System.out.println("inside item writer");
 		items.stream().forEach(System.out::println);
 		

@@ -6,13 +6,14 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
 import com.infybuzz.mode.StudentCsv;
+import com.infybuzz.mode.StudentJdbc;
 import com.infybuzz.mode.StudentJson;
 
 @Component
-public class FirstItemWriter implements ItemWriter<StudentJson> {
+public class FirstItemWriter implements ItemWriter<StudentJdbc> {
 
 	@Override
-	public void write(List<? extends StudentJson> items) throws Exception {
+	public void write(List<? extends StudentJdbc> items) throws Exception {
 		System.out.println("inside item writer");
 		items.stream().forEach(System.out::println);
 		

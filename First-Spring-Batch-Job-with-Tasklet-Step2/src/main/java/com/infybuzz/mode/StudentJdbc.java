@@ -3,10 +3,9 @@ package com.infybuzz.mode;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class StudentJdbc {
-	
+
 	private Long id;
 
-	@JsonProperty("first_name")
 	private String firstName;
 
 	private String lastName;
@@ -50,7 +49,5 @@ public class StudentJdbc {
 		return "StudentJdbc [id=" + id + ", firstName=" + firstName + ", lastName=" + lastName + ", email=" + email
 				+ "]";
 	}
-	
-	
 
 }

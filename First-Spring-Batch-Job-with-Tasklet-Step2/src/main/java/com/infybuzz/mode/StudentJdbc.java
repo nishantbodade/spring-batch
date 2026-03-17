@@ -1,7 +1,8 @@
 package com.infybuzz.mode;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.xml.bind.annotation.XmlRootElement;
 
+@XmlRootElement(name = "student")
 public class StudentJdbc {
 
 	private Long id;

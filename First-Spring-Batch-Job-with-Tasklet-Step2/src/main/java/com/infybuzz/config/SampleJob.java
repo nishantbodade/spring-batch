@@ -2,6 +2,8 @@ package com.infybuzz.config;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Date;
 
 import javax.sql.DataSource;
@@ -13,6 +15,7 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
+import org.springframework.batch.item.database.ItemPreparedStatementSetter;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.file.FlatFileFooterCallback;
@@ -106,7 +109,8 @@ public class SampleJob {
 				// .writer(flatFileItemWriter(null)).build();
 				// .writer(jsonFileItemWriter(null)).build();
 				//.writer(staxEventItemWriter(null)).build();
-				.writer(jdbcBatchItemWriter2()).build();
+				//.writer(jdbcBatchItemWriter2()).build();
+				.writer(jdbcBatchItemWriter3()).build();
 
 	}
 
@@ -292,6 +296,28 @@ public class SampleJob {
 		jdbcBatchItemWriter.setDataSource(eazyschooldatasource());
 		jdbcBatchItemWriter.setSql("INSERT INTO student (id, first_name, last_name, email) VALUES (:id, :firstName, :lastName, :email)");
 		jdbcBatchItemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<StudentCsv>());
+		return jdbcBatchItemWriter;
+	}
+	
+	@Bean
+	public JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter3() {
+		JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter = new JdbcBatchItemWriter<StudentCsv>();
+		jdbcBatchItemWriter.setDataSource(eazyschooldatasource());
+		jdbcBatchItemWriter.setSql("INSERT INTO student (id, first_name, last_name, email) VALUES (?,?,?,?)");
+		
+		jdbcBatchItemWriter.setItemPreparedStatementSetter(new ItemPreparedStatementSetter<StudentCsv>() {
+			
+			@Override
+			public void setValues(StudentCsv item, PreparedStatement ps) throws SQLException {
+				
+				ps.setLong(1, item.getId());
+				ps.setString(2, item.getFirstName());
+				ps.setString(3, item.getLastName());
+				ps.setString(4, item.getEmail());
+				
+			}
+		});
+		
 		return jdbcBatchItemWriter;
 	}
 }

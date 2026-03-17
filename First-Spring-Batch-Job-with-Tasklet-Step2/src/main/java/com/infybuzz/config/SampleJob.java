@@ -14,6 +14,7 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.adapter.ItemWriterAdapter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.ItemPreparedStatementSetter;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
@@ -47,17 +48,19 @@ import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import com.infybuzz.mode.StudentCsv;
 import com.infybuzz.mode.StudentJdbc;
 import com.infybuzz.mode.StudentJson;
+import com.infybuzz.mode.StudentResponse;
 import com.infybuzz.mode.StudentXml;
 import com.infybuzz.processor.FirstItemProcessor;
 import com.infybuzz.reader.FirstItemReader;
+import com.infybuzz.service.StudentService;
 import com.infybuzz.writer.FirstItemWriter;
 
 @Configuration
 public class SampleJob {
 
-	/*
-	 * @Autowired private StudentService studentService;
-	 */
+	
+	  @Autowired private StudentService studentService;
+	 
 
 	@Autowired
 	private JobBuilderFactory jobBuilderFactory;
@@ -99,7 +102,7 @@ public class SampleJob {
 	@Bean
 	public Step firstChunkStep() {
 
-		return stepBuilderFactory.get("First Chunk Step").<StudentCsv, StudentCsv>chunk(5)
+		return stepBuilderFactory.get("First Chunk Step").<StudentCsv, StudentResponse>chunk(5)
 				.reader(flatFileItemReader(null))
 				// .reader(jsonItemReader(null))
 				// .reader(jdbcCursorItemReader())
@@ -110,7 +113,8 @@ public class SampleJob {
 				// .writer(jsonFileItemWriter(null)).build();
 				//.writer(staxEventItemWriter(null)).build();
 				//.writer(jdbcBatchItemWriter2()).build();
-				.writer(jdbcBatchItemWriter3()).build();
+				//.writer(jdbcBatchItemWriter3()).build();
+				.writer(itemWriterAdapter()).build();
 
 	}
 
@@ -320,4 +324,18 @@ public class SampleJob {
 		
 		return jdbcBatchItemWriter;
 	}
+	
+	
+	  public ItemWriterAdapter<StudentResponse> itemWriterAdapter(){
+		  ItemWriterAdapter<StudentResponse> itemReaderAdapter= new
+				  ItemWriterAdapter<StudentResponse>();
+	  
+	  itemReaderAdapter.setTargetObject(studentService);
+	  itemReaderAdapter.setTargetMethod("resrCallToCreateStudent");
+	  
+	  return itemReaderAdapter;
+	  }
+	 
+	
+	
 }

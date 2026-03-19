@@ -14,6 +14,7 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.step.skip.AlwaysSkipItemSkipPolicy;
 import org.springframework.batch.item.adapter.ItemWriterAdapter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.ItemPreparedStatementSetter;
@@ -23,6 +24,7 @@ import org.springframework.batch.item.file.FlatFileFooterCallback;
 import org.springframework.batch.item.file.FlatFileHeaderCallback;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
+import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
@@ -58,9 +60,8 @@ import com.infybuzz.writer.FirstItemWriter;
 @Configuration
 public class SampleJob {
 
-	
-	  @Autowired private StudentService studentService;
-	 
+	@Autowired
+	private StudentService studentService;
 
 	@Autowired
 	private JobBuilderFactory jobBuilderFactory;
@@ -95,26 +96,24 @@ public class SampleJob {
 
 	@Bean
 	public Job chunkJob() {
-		return jobBuilderFactory.get("Chunk Job").incrementer(new RunIdIncrementer()).start(firstChunkStep())
-				.build();
+		return jobBuilderFactory.get("Chunk Job").incrementer(new RunIdIncrementer()).start(firstChunkStep()).build();
 	}
 
 	@Bean
 	public Step firstChunkStep() {
 
-		return stepBuilderFactory.get("First Chunk Step").<StudentCsv, StudentResponse>chunk(5)
+		return stepBuilderFactory.get("First Chunk Step")
+				.<StudentCsv, StudentJson>chunk(3)
 				.reader(flatFileItemReader(null))
-				// .reader(jsonItemReader(null))
-				// .reader(jdbcCursorItemReader())
-				// .reader(staxEventItemReader(null))
-				// .reader(itemReaderAdapter())
-				// .processor(firstItemProcessor)
-				// .writer(flatFileItemWriter(null)).build();
-				// .writer(jsonFileItemWriter(null)).build();
-				//.writer(staxEventItemWriter(null)).build();
-				//.writer(jdbcBatchItemWriter2()).build();
-				//.writer(jdbcBatchItemWriter3()).build();
-				.writer(itemWriterAdapter()).build();
+				.processor(firstItemProcessor)
+				.writer(jsonFileItemWriter(null))
+				.faultTolerant()
+				.skip(Throwable.class)
+				//.skip(FlatFileParseException.class)
+				//.skip(IllegalStateException.class)
+				//.skipLimit(Integer.MAX_VALUE)
+				.skipPolicy(new AlwaysSkipItemSkipPolicy())
+				.build();
 
 	}
 
@@ -293,49 +292,47 @@ public class SampleJob {
 
 		return staxEventItemWriter;
 	}
-	
+
 	@Bean
 	public JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter2() {
 		JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter = new JdbcBatchItemWriter<StudentCsv>();
 		jdbcBatchItemWriter.setDataSource(eazyschooldatasource());
-		jdbcBatchItemWriter.setSql("INSERT INTO student (id, first_name, last_name, email) VALUES (:id, :firstName, :lastName, :email)");
-		jdbcBatchItemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<StudentCsv>());
+		jdbcBatchItemWriter.setSql(
+				"INSERT INTO student (id, first_name, last_name, email) VALUES (:id, :firstName, :lastName, :email)");
+		jdbcBatchItemWriter
+				.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<StudentCsv>());
 		return jdbcBatchItemWriter;
 	}
-	
+
 	@Bean
 	public JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter3() {
 		JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter = new JdbcBatchItemWriter<StudentCsv>();
 		jdbcBatchItemWriter.setDataSource(eazyschooldatasource());
 		jdbcBatchItemWriter.setSql("INSERT INTO student (id, first_name, last_name, email) VALUES (?,?,?,?)");
-		
+
 		jdbcBatchItemWriter.setItemPreparedStatementSetter(new ItemPreparedStatementSetter<StudentCsv>() {
-			
+
 			@Override
 			public void setValues(StudentCsv item, PreparedStatement ps) throws SQLException {
-				
+
 				ps.setLong(1, item.getId());
 				ps.setString(2, item.getFirstName());
 				ps.setString(3, item.getLastName());
 				ps.setString(4, item.getEmail());
-				
+
 			}
 		});
-		
+
 		return jdbcBatchItemWriter;
 	}
-	
-	
-	  public ItemWriterAdapter<StudentResponse> itemWriterAdapter(){
-		  ItemWriterAdapter<StudentResponse> itemReaderAdapter= new
-				  ItemWriterAdapter<StudentResponse>();
-	  
-	  itemReaderAdapter.setTargetObject(studentService);
-	  itemReaderAdapter.setTargetMethod("resrCallToCreateStudent");
-	  
-	  return itemReaderAdapter;
-	  }
-	 
-	
-	
+
+	public ItemWriterAdapter<StudentResponse> itemWriterAdapter() {
+		ItemWriterAdapter<StudentResponse> itemReaderAdapter = new ItemWriterAdapter<StudentResponse>();
+
+		itemReaderAdapter.setTargetObject(studentService);
+		itemReaderAdapter.setTargetMethod("resrCallToCreateStudent");
+
+		return itemReaderAdapter;
+	}
+
 }

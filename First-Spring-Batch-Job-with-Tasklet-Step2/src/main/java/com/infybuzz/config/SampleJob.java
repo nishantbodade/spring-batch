@@ -44,6 +44,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 
 import com.infybuzz.listener.SkipListener;
@@ -107,6 +108,9 @@ public class SampleJob {
 	@Autowired
 	@Qualifier("mysqlEntityManagerFactory")
 	private EntityManagerFactory mysqlEntityManagerFactory;
+	
+	@Autowired
+	private JpaTransactionManager jpaTransactionManager;
 
 	@Bean
 	public Job chunkJob() {
@@ -117,10 +121,10 @@ public class SampleJob {
 	public Step firstChunkStep() {
 
 		return stepBuilderFactory.get("First Chunk Step")
-				.<StudentCsv, StudentJson>chunk(3)
-				.reader(flatFileItemReader(null))
+				.<com.infybuzz.postgresql.Student, Student>chunk(3)
+				.reader(jpaCursorItemReader())
 				.processor(firstItemProcessor)
-				.writer(jsonFileItemWriter(null))
+				.writer(jpaItemWriter())
 				.faultTolerant()
 				.skip(Throwable.class)
 				//.skip(FlatFileParseException.class)
@@ -131,6 +135,7 @@ public class SampleJob {
 				.retryLimit(3)
 				.retry(Throwable.class)
 				.listener(skipListnerInterface)
+				.transactionManager(jpaTransactionManager)
 				.build();
 
 	}
@@ -368,13 +373,20 @@ public class SampleJob {
 	 * return itemReaderAdapter; }
 	 */
 	
-	public JpaCursorItemReader<com.infybuzz.postgresql.Student> jpaCursorItemReader() {
-		JpaCursorItemReader<com.infybuzz.postgresql.Student> jpaCursorItemReader = 
-				new JpaCursorItemReader<com.infybuzz.postgresql.Student>();
+	@StepScope
+	@Bean
+	public JpaCursorItemReader<Student> jpaCursorItemReader(
+			@Value("#{jobParameters['currentItemCount']}") Integer currentItemCount,
+			@Value("#{jobParameters['maxItemCount']}") Integer maxItemCount) {
+		JpaCursorItemReader<Student> jpaCursorItemReader = 
+				new JpaCursorItemReader<Student>();
 		
 		jpaCursorItemReader.setEntityManagerFactory(postgresqlEntityManagerFactory);
 		
 		jpaCursorItemReader.setQueryString("From Student");
+		
+		jpaCursorItemReader.setCurrentItemCount(currentItemCount);
+		jpaCursorItemReader.setMaxItemCount(maxItemCount);
 		
 		return jpaCursorItemReader;
 	}

@@ -3,27 +3,28 @@ package com.infybuzz.processor;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
-import com.infybuzz.mode.StudentCsv;
-import com.infybuzz.mode.StudentJdbc;
-import com.infybuzz.mode.StudentJson;
+import com.infybuzz.postgresql.Student;
 
 @Component
-public class FirstItemProcessor implements ItemProcessor<StudentCsv, StudentJson>{
+public class FirstItemProcessor implements ItemProcessor<Student, com.infybuzz.mysql.Student>{
 
 	@Override
-	public StudentJson process(StudentCsv item) throws Exception {
-		System.out.println("Inside item processor");
-		if(item.getId() == 5) {
-			System.out.println("Inside ItemProcessor method");
-
-			throw new NullPointerException();
-		}
-		StudentJson studentJson = new StudentJson();
-		studentJson.setId(item.getId());
-		studentJson.setFirstName(item.getFirstName());
-		studentJson.setLastName(item.getLastName());
-		studentJson.setEmail(item.getEmail());
-		return studentJson;
+	public com.infybuzz.mysql.Student process(Student item) throws Exception {
+		
+		System.out.println(item.getId());
+		
+		com.infybuzz.mysql.Student student = new 
+				com.infybuzz.mysql.Student();
+		
+		student.setId(item.getId());
+		student.setFirstName(item.getFirstName());
+		student.setLastName(item.getLastName());
+		student.setEmail(item.getEmail());
+		student.setDeptId(item.getDeptId());
+		student.setIsActive(item.getIsActive() != null ? 
+				Boolean.valueOf(item.getIsActive()) : false);
+		
+		return student;
 		
 	}
 

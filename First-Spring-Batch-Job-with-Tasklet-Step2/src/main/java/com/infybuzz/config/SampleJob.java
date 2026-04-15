@@ -119,9 +119,11 @@ public class SampleJob {
 				.skip(Throwable.class)
 				//.skip(FlatFileParseException.class)
 				//.skip(IllegalStateException.class)
-				//.skipLimit(Integer.MAX_VALUE)
-				.skipPolicy(new AlwaysSkipItemSkipPolicy())
+				.skipLimit(100)
+				//.skipPolicy(new AlwaysSkipItemSkipPolicy())
 				//.listener(skipListener)
+				.retryLimit(3)
+				.retry(Throwable.class)
 				.listener(skipListnerInterface)
 				.build();
 
@@ -286,6 +288,8 @@ public class SampleJob {
 			@Override
 			public String doWrite(List<? extends StudentJson> items) {
 				items.stream().forEach(item->{
+					
+					System.out.println("Inside JsonFileItemWriter doWrite method");
 					if(item.getId() == 3) {
 						throw new NullPointerException();
 					}

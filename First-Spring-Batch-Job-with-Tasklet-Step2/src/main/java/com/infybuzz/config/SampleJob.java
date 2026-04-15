@@ -16,17 +16,16 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.step.skip.AlwaysSkipItemSkipPolicy;
-import org.springframework.batch.item.adapter.ItemWriterAdapter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.ItemPreparedStatementSetter;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.JpaCursorItemReader;
+import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.file.FlatFileFooterCallback;
 import org.springframework.batch.item.file.FlatFileHeaderCallback;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
-import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
@@ -41,11 +40,8 @@ import org.springframework.batch.item.xml.StaxEventItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
@@ -55,8 +51,8 @@ import com.infybuzz.listener.SkipListnerInterface;
 import com.infybuzz.mode.StudentCsv;
 import com.infybuzz.mode.StudentJdbc;
 import com.infybuzz.mode.StudentJson;
-import com.infybuzz.mode.StudentResponse;
 import com.infybuzz.mode.StudentXml;
+import com.infybuzz.mysql.Student;
 import com.infybuzz.processor.FirstItemProcessor;
 import com.infybuzz.reader.FirstItemReader;
 import com.infybuzz.service.StudentService;
@@ -361,13 +357,35 @@ public class SampleJob {
 		return jdbcBatchItemWriter;
 	}
 
-	public ItemWriterAdapter<StudentResponse> itemWriterAdapter() {
-		ItemWriterAdapter<StudentResponse> itemReaderAdapter = new ItemWriterAdapter<StudentResponse>();
-
-		itemReaderAdapter.setTargetObject(studentService);
-		itemReaderAdapter.setTargetMethod("resrCallToCreateStudent");
-
-		return itemReaderAdapter;
+	/*
+	 * public ItemWriterAdapter<StudentResponse> itemWriterAdapter() {
+	 * ItemWriterAdapter<StudentResponse> itemReaderAdapter = new
+	 * ItemWriterAdapter<StudentResponse>();
+	 * 
+	 * itemReaderAdapter.setTargetObject(studentService);
+	 * itemReaderAdapter.setTargetMethod("resrCallToCreateStudent");
+	 * 
+	 * return itemReaderAdapter; }
+	 */
+	
+	public JpaCursorItemReader<com.infybuzz.postgresql.Student> jpaCursorItemReader() {
+		JpaCursorItemReader<com.infybuzz.postgresql.Student> jpaCursorItemReader = 
+				new JpaCursorItemReader<com.infybuzz.postgresql.Student>();
+		
+		jpaCursorItemReader.setEntityManagerFactory(postgresqlEntityManagerFactory);
+		
+		jpaCursorItemReader.setQueryString("From Student");
+		
+		return jpaCursorItemReader;
+	}
+	
+	public JpaItemWriter<com.infybuzz.mysql.Student> jpaItemWriter() {
+		JpaItemWriter<com.infybuzz.mysql.Student> jpaItemWriter = 
+				new JpaItemWriter<com.infybuzz.mysql.Student>();
+		
+		jpaItemWriter.setEntityManagerFactory(mysqlEntityManagerFactory);
+		
+		return jpaItemWriter;
 	}
 
 }

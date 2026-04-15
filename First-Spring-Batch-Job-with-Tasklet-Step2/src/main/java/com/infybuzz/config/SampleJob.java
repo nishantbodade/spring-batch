@@ -38,6 +38,7 @@ import org.springframework.batch.item.json.JsonItemReader;
 import org.springframework.batch.item.xml.StaxEventItemReader;
 import org.springframework.batch.item.xml.StaxEventItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -89,18 +90,14 @@ public class SampleJob {
 	@Autowired
 	private SkipListnerInterface skipListnerInterface;
 	
-	@Bean
-	@Primary
-	@ConfigurationProperties(prefix = "spring.datasource")
-	public DataSource datasource() {
-		return DataSourceBuilder.create().build();
-	}
 
-	@Bean
-	@ConfigurationProperties(prefix = "spring.eazyschooldatasource")
-	public DataSource eazyschooldatasource() {
-		return DataSourceBuilder.create().build();
-	}
+	@Autowired
+	@Qualifier("datasource")
+	private DataSource datasource;
+	
+	@Autowired
+	@Qualifier("eazyschooldatasource")
+	private DataSource eazyschooldatasource;
 
 	@Bean
 	public Job chunkJob() {
@@ -191,7 +188,7 @@ public class SampleJob {
 
 		JdbcCursorItemReader<StudentJdbc> jdbcCursorItemReader = new JdbcCursorItemReader<StudentJdbc>();
 
-		jdbcCursorItemReader.setDataSource(eazyschooldatasource());
+		jdbcCursorItemReader.setDataSource(eazyschooldatasource);
 
 		jdbcCursorItemReader.setSql("SELECT id, first_name as firstName, last_name as lastName, email FROM student");
 		jdbcCursorItemReader.setRowMapper(new BeanPropertyRowMapper<StudentJdbc>() {
@@ -321,7 +318,7 @@ public class SampleJob {
 	@Bean
 	public JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter2() {
 		JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter = new JdbcBatchItemWriter<StudentCsv>();
-		jdbcBatchItemWriter.setDataSource(eazyschooldatasource());
+		jdbcBatchItemWriter.setDataSource(eazyschooldatasource);
 		jdbcBatchItemWriter.setSql(
 				"INSERT INTO student (id, first_name, last_name, email) VALUES (:id, :firstName, :lastName, :email)");
 		jdbcBatchItemWriter
@@ -332,7 +329,7 @@ public class SampleJob {
 	@Bean
 	public JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter3() {
 		JdbcBatchItemWriter<StudentCsv> jdbcBatchItemWriter = new JdbcBatchItemWriter<StudentCsv>();
-		jdbcBatchItemWriter.setDataSource(eazyschooldatasource());
+		jdbcBatchItemWriter.setDataSource(eazyschooldatasource);
 		jdbcBatchItemWriter.setSql("INSERT INTO student (id, first_name, last_name, email) VALUES (?,?,?,?)");
 
 		jdbcBatchItemWriter.setItemPreparedStatementSetter(new ItemPreparedStatementSetter<StudentCsv>() {

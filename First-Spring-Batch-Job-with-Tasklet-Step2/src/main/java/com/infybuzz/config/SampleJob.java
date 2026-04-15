@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 
+import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
 import org.springframework.batch.core.Job;
@@ -98,6 +99,18 @@ public class SampleJob {
 	@Autowired
 	@Qualifier("eazyschooldatasource")
 	private DataSource eazyschooldatasource;
+	
+	@Autowired
+	@Qualifier("postgresdatasource")
+	private DataSource postgresdatasource;
+	
+	@Autowired
+	@Qualifier("postgresqlEntityManagerFactory")
+	private EntityManagerFactory postgresqlEntityManagerFactory;
+	
+	@Autowired
+	@Qualifier("mysqlEntityManagerFactory")
+	private EntityManagerFactory mysqlEntityManagerFactory;
 
 	@Bean
 	public Job chunkJob() {

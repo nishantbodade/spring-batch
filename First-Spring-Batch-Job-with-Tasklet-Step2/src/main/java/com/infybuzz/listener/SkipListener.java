@@ -24,7 +24,7 @@ public class SkipListener {
 	}
 	
 	@OnSkipInProcess
-	public void onSkipInRead(StudentCsv studentCsv,Throwable t) {
+	public void onSkipInProcess(StudentCsv studentCsv,Throwable t) {
 		
 			createFile(
 					"C:\\DataDrive\\Tutorial\\Spring batch\\Practice\\First-Spring-Batch-Job-with-Tasklet-Step2\\Chunk Job\\First Chunk Step\\processor\\skipInRead.txt",

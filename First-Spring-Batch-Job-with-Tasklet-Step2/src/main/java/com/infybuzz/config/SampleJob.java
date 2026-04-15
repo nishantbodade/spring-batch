@@ -49,6 +49,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 
 import com.infybuzz.listener.SkipListener;
+import com.infybuzz.listener.SkipListnerInterface;
 import com.infybuzz.mode.StudentCsv;
 import com.infybuzz.mode.StudentJdbc;
 import com.infybuzz.mode.StudentJson;
@@ -85,6 +86,9 @@ public class SampleJob {
 	@Autowired
 	private DataSource dataSource;
 
+	@Autowired
+	private SkipListnerInterface skipListnerInterface;
+	
 	@Bean
 	@Primary
 	@ConfigurationProperties(prefix = "spring.datasource")
@@ -117,7 +121,8 @@ public class SampleJob {
 				//.skip(IllegalStateException.class)
 				//.skipLimit(Integer.MAX_VALUE)
 				.skipPolicy(new AlwaysSkipItemSkipPolicy())
-				.listener(skipListener)
+				//.listener(skipListener)
+				.listener(skipListnerInterface)
 				.build();
 
 	}

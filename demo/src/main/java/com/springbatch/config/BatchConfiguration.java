@@ -80,7 +80,7 @@ public class BatchConfiguration {
 				.start(step1())
 				.on("COMPLETED").to(step2())
 				.from(step2()).on("COMPLETED").to(step3())
-				.from(step2()).on("FAILED").to(step4())
+				.from(step2()).on("*").to(step4())//apart from COMPLETE ,ALL.
 				.end()
 				.build();
 	}

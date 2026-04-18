@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan({"com.springbatch.controller","com.springbatch.config"})
+@ComponentScan({"com.springbatch.controller","com.springbatch.config","com.springbatch.listener"})
 public class DemoApplication {
 
 	public static void main(String[] args) {

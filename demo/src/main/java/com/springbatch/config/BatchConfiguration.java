@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.springbatch.listener.MyStepExecutionListener;
+
 @Configuration
 @EnableBatchProcessing
 public class BatchConfiguration {
@@ -21,6 +23,9 @@ public class BatchConfiguration {
 
 	@Autowired
 	public StepBuilderFactory stepBuilderFactory;
+	
+	@Autowired
+	public MyStepExecutionListener listener;
 
 	@Bean
 	public Step step1() {
@@ -36,18 +41,18 @@ public class BatchConfiguration {
 	
 	@Bean
 	public Step step2() {
-		return this.stepBuilderFactory.get("step1").tasklet(new Tasklet() {
+		return this.stepBuilderFactory.get("step2").tasklet(new Tasklet() {
 
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				boolean isSuccess=true;
+				boolean isSuccess=false;
 				if(isSuccess) {
 					throw new Exception("Test Exception");
 				}
 				System.out.println("step2 executed!!");
 				return RepeatStatus.FINISHED;
 			}
-		}).build();
+		}).listener(listener).build();
 	}
 	
 	@Bean
@@ -64,7 +69,7 @@ public class BatchConfiguration {
 	
 	@Bean
 	public Step step4() {
-		return this.stepBuilderFactory.get("step3").tasklet(new Tasklet() {
+		return this.stepBuilderFactory.get("step4").tasklet(new Tasklet() {
 
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
@@ -80,7 +85,7 @@ public class BatchConfiguration {
 				.start(step1())
 				.on("COMPLETED").to(step2())
 				.from(step2()).on("COMPLETED").to(step3())
-				.from(step2()).on("*").to(step4())//apart from COMPLETE ,ALL.
+				.from(step2()).on("TEST_STATUS").to(step4())
 				.end()
 				.build();
 	}

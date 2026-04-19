@@ -19,13 +19,17 @@ import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
+import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
+import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 
 import com.springbatch.domain.Product;
 import com.springbatch.domain.ProductFieldSetMapper;
@@ -96,21 +100,28 @@ public class BatchConfiguration {
 		return itemReader;
 
 	}
+	
+	public ItemWriter<Product> flatFileItemWriter(){
+		FlatFileItemWriter<Product> itemWriter =new FlatFileItemWriter<Product>();
+		itemWriter.setResource(new FileSystemResource("output/product.csv"));
+		
+		DelimitedLineAggregator<Product> lineAggregator=new DelimitedLineAggregator<Product>();
+		lineAggregator.setDelimiter(",");
+		
+		BeanWrapperFieldExtractor<Product> extractor=new BeanWrapperFieldExtractor<Product>();
+		extractor.setNames(new String[] {"productId","productName","productCategory","productPrice"});
+		
+		lineAggregator.setFieldExtractor(extractor);
+		
+		itemWriter.setLineAggregator(lineAggregator);
+		
+		return itemWriter;
+	}
 
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("chunkBaseStep1").<Product, Product>chunk(2).reader(jdbcPagingItemReader())
-				.writer(new ItemWriter<Product>() {
-
-					@Override
-					public void write(List<? extends Product> items) throws Exception {
-						System.out.println("chunk-processing started");
-						items.forEach(System.out::println);
-						System.out.println("chunk-processing stop");
-
-					}
-
-				}).build();
+				.writer(flatFileItemWriter()).build();
 	}
 
 	@Bean

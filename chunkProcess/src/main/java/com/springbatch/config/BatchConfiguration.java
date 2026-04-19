@@ -15,6 +15,7 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
@@ -33,6 +34,7 @@ import org.springframework.core.io.FileSystemResource;
 
 import com.springbatch.domain.Product;
 import com.springbatch.domain.ProductFieldSetMapper;
+import com.springbatch.domain.ProductItemPrepareStatmentSetter;
 import com.springbatch.domain.ProductRowMapper;
 import com.springbatch.reader.ProductNameItemReader;
 
@@ -100,7 +102,7 @@ public class BatchConfiguration {
 		return itemReader;
 
 	}
-	
+	@Bean
 	public ItemWriter<Product> flatFileItemWriter(){
 		FlatFileItemWriter<Product> itemWriter =new FlatFileItemWriter<Product>();
 		itemWriter.setResource(new FileSystemResource("output/product.csv"));
@@ -117,11 +119,21 @@ public class BatchConfiguration {
 		
 		return itemWriter;
 	}
+	
+	@Bean
+	public JdbcBatchItemWriter<Product> jdbcBatchItemWriter(){
+		JdbcBatchItemWriter<Product> itemWriter=new JdbcBatchItemWriter<Product>();
+		itemWriter.setDataSource(dataSource);
+		itemWriter.setSql("insert into product_details_output values(?,?,?,?)");
+		itemWriter.setItemPreparedStatementSetter(new ProductItemPrepareStatmentSetter());
+		return itemWriter;
+		
+	}
 
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("chunkBaseStep1").<Product, Product>chunk(2).reader(jdbcPagingItemReader())
-				.writer(flatFileItemWriter()).build();
+				.writer(jdbcBatchItemWriter()).build();
 	}
 
 	@Bean

@@ -16,6 +16,8 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
@@ -38,7 +40,7 @@ public class BatchConfiguration {
 
 	@Autowired
 	public StepBuilderFactory stepBuilderFactory;
-	
+
 	@Autowired
 	public DataSource dataSource;
 
@@ -67,20 +69,37 @@ public class BatchConfiguration {
 		return fileItemReader;
 
 	}
-	
+
 	@Bean
-	public ItemReader<Product> jdbcCursorItemReader(){
-		JdbcCursorItemReader<Product> itemReader=new JdbcCursorItemReader<Product>();
+	public ItemReader<Product> jdbcCursorItemReader() {
+		JdbcCursorItemReader<Product> itemReader = new JdbcCursorItemReader<Product>();
 		itemReader.setDataSource(dataSource);
 		itemReader.setSql("select * from product_details order by product_id");
 		itemReader.setRowMapper(new ProductRowMapper());
 		return itemReader;
-				
+
 	}
 
 	@Bean
-	public Step step1() {
-		return this.stepBuilderFactory.get("chunkBaseStep1").<Product, Product>chunk(2).reader(jdbcCursorItemReader())
+	public ItemReader<Product> jdbcPagingItemReader() throws Exception {
+		JdbcPagingItemReader<Product> itemReader = new JdbcPagingItemReader<Product>();
+		itemReader.setDataSource(dataSource);
+		SqlPagingQueryProviderFactoryBean factoryBean = new SqlPagingQueryProviderFactoryBean();
+		factoryBean.setDataSource(dataSource);
+		factoryBean.setSelectClause("select PRODUCT_ID,PRODUCT_NAME,PRODUCT_CATEGORY,PRODUCT_PRICE");
+		factoryBean.setFromClause("from PRODUCT_DETAILS");
+		factoryBean.setSortKey("PRODUCT_ID");
+		itemReader.setQueryProvider(factoryBean.getObject());
+		itemReader.setRowMapper(new ProductRowMapper());
+		itemReader.setPageSize(2);
+
+		return itemReader;
+
+	}
+
+	@Bean
+	public Step step1() throws Exception {
+		return this.stepBuilderFactory.get("chunkBaseStep1").<Product, Product>chunk(2).reader(jdbcPagingItemReader())
 				.writer(new ItemWriter<Product>() {
 
 					@Override
@@ -95,7 +114,7 @@ public class BatchConfiguration {
 	}
 
 	@Bean
-	public Job firstJob() {
+	public Job firstJob() throws Exception {
 		return this.jobBuilderFactory.get("job1").start(step1())
 
 				.build();

@@ -3,6 +3,8 @@ package com.springbatch.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepContribution;
@@ -13,6 +15,7 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
@@ -24,6 +27,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import com.springbatch.domain.Product;
 import com.springbatch.domain.ProductFieldSetMapper;
+import com.springbatch.domain.ProductRowMapper;
 import com.springbatch.reader.ProductNameItemReader;
 
 @Configuration
@@ -34,6 +38,9 @@ public class BatchConfiguration {
 
 	@Autowired
 	public StepBuilderFactory stepBuilderFactory;
+	
+	@Autowired
+	public DataSource dataSource;
 
 	@Bean
 	public ItemReader<String> itemReader() {
@@ -60,10 +67,20 @@ public class BatchConfiguration {
 		return fileItemReader;
 
 	}
+	
+	@Bean
+	public ItemReader<Product> jdbcCursorItemReader(){
+		JdbcCursorItemReader<Product> itemReader=new JdbcCursorItemReader<Product>();
+		itemReader.setDataSource(dataSource);
+		itemReader.setSql("select * from product_details order by product_id");
+		itemReader.setRowMapper(new ProductRowMapper());
+		return itemReader;
+				
+	}
 
 	@Bean
 	public Step step1() {
-		return this.stepBuilderFactory.get("chunkBaseStep1").<Product, Product>chunk(2).reader(flatFileItemReader())
+		return this.stepBuilderFactory.get("chunkBaseStep1").<Product, Product>chunk(2).reader(jdbcCursorItemReader())
 				.writer(new ItemWriter<Product>() {
 
 					@Override

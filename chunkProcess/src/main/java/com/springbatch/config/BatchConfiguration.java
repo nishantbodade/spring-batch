@@ -15,6 +15,7 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
@@ -124,8 +125,8 @@ public class BatchConfiguration {
 	public JdbcBatchItemWriter<Product> jdbcBatchItemWriter(){
 		JdbcBatchItemWriter<Product> itemWriter=new JdbcBatchItemWriter<Product>();
 		itemWriter.setDataSource(dataSource);
-		itemWriter.setSql("insert into product_details_output values(?,?,?,?)");
-		itemWriter.setItemPreparedStatementSetter(new ProductItemPrepareStatmentSetter());
+		itemWriter.setSql("insert into product_details_output values(:productId,:productName,:productCategory,:productPrice)");
+		itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider());
 		return itemWriter;
 		
 	}

@@ -27,6 +27,7 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.validator.ValidatingItemProcessor;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -39,6 +40,7 @@ import com.springbatch.domain.Product;
 import com.springbatch.domain.ProductFieldSetMapper;
 import com.springbatch.domain.ProductItemPrepareStatmentSetter;
 import com.springbatch.domain.ProductRowMapper;
+import com.springbatch.domain.ProductValidator;
 import com.springbatch.processor.FilterDataItemProcessor;
 import com.springbatch.processor.MyProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
@@ -159,16 +161,24 @@ public class BatchConfiguration {
 	public ItemProcessor<Product, Product> filterDataItemProcessor(){
 		return new FilterDataItemProcessor();
 	}
+	
+	@Bean
+	public ValidatingItemProcessor<Product> itemValidationProcessor() {
+		ValidatingItemProcessor<Product> processor = new ValidatingItemProcessor(new ProductValidator());
+		processor.setFilter(true); // Filter out invalid items instead of throwing an exception
+		return processor;
+	}
 
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("chunkBaseStep1")
 				.<Product, Product>chunk(2)
 				.reader(jdbcPagingItemReader())
-				.processor(filterDataItemProcessor())
+				.processor(itemValidationProcessor())
 				.writer(jdbcBatchItemWriter()).build();
 	}
 
+	
 	@Bean
 	public Job firstJob() throws Exception {
 		return this.jobBuilderFactory.get("job1").start(step1())

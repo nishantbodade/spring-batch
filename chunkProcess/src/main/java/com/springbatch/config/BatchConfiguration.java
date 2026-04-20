@@ -27,6 +27,7 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.support.CompositeItemProcessor;
 import org.springframework.batch.item.validator.ValidatingItemProcessor;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +43,7 @@ import com.springbatch.domain.ProductItemPrepareStatmentSetter;
 import com.springbatch.domain.ProductRowMapper;
 import com.springbatch.domain.ProductValidator;
 import com.springbatch.processor.FilterDataItemProcessor;
-import com.springbatch.processor.MyProductItemProcessor;
+import com.springbatch.processor.TransformProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 
 @Configuration
@@ -128,33 +129,32 @@ public class BatchConfiguration {
 	}
 	
 	
-	@Bean
-	public JdbcBatchItemWriter<Product> jdbcBatchItemWriter() {
-		JdbcBatchItemWriter<Product> itemWriter = new JdbcBatchItemWriter<Product>();
-		itemWriter.setDataSource(dataSource);
-		itemWriter.setSql(
-				"insert into product_details_output values(:productId,:productName,:productCategory,:productPrice)");
-		itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider());
-		return itemWriter;
-
-	}
-	 
-	
 	/*
-	 * @Bean public JdbcBatchItemWriter<OsProduct> jdbcBatchItemWriter(){
-	 * JdbcBatchItemWriter<OsProduct> itemWriter=new
-	 * JdbcBatchItemWriter<OsProduct>(); itemWriter.setDataSource(dataSource);
-	 * itemWriter.
-	 * setSql("insert into OS_PRODUCT_DETAILS values(:productId,:productName,:productCategory,:productPrice,:taxPercent,:sku,:shippingRate)"
+	 * @Bean public JdbcBatchItemWriter<Product> jdbcBatchItemWriter() {
+	 * JdbcBatchItemWriter<Product> itemWriter = new JdbcBatchItemWriter<Product>();
+	 * itemWriter.setDataSource(dataSource); itemWriter.setSql(
+	 * "insert into product_details_output values(:productId,:productName,:productCategory,:productPrice)"
 	 * ); itemWriter.setItemSqlParameterSourceProvider(new
 	 * BeanPropertyItemSqlParameterSourceProvider()); return itemWriter;
 	 * 
 	 * }
+	 * 
+	 * 
 	 */
+	  @Bean public JdbcBatchItemWriter<OsProduct> jdbcBatchItemWriter(){
+	  JdbcBatchItemWriter<OsProduct> itemWriter=new
+	  JdbcBatchItemWriter<OsProduct>(); itemWriter.setDataSource(dataSource);
+	  itemWriter.
+	  setSql("insert into OS_PRODUCT_DETAILS values(:productId,:productName,:productCategory,:productPrice,:taxPercent,:sku,:shippingRate)"
+	  ); itemWriter.setItemSqlParameterSourceProvider(new
+	  BeanPropertyItemSqlParameterSourceProvider()); return itemWriter;
+	  
+	  }
+	 
 	
 	@Bean
 	public ItemProcessor<Product, OsProduct> itemProcessor(){
-		return new MyProductItemProcessor();
+		return new TransformProductItemProcessor();
 	}
 	
 	@Bean
@@ -168,13 +168,22 @@ public class BatchConfiguration {
 		processor.setFilter(true); // Filter out invalid items instead of throwing an exception
 		return processor;
 	}
+	
+	public CompositeItemProcessor<Product, OsProduct> compositeItemProcessor(){
+		CompositeItemProcessor<Product, OsProduct> processor=new CompositeItemProcessor<Product, OsProduct>();
+		List<ItemProcessor<?,?>> itemProcessors=new ArrayList<ItemProcessor<?,?>>();
+		itemProcessors.add(itemValidationProcessor());
+		itemProcessors.add(itemProcessor());
+		processor.setDelegates(itemProcessors);
+		return processor;
+	}
 
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("chunkBaseStep1")
-				.<Product, Product>chunk(2)
+				.<Product, OsProduct>chunk(2)
 				.reader(jdbcPagingItemReader())
-				.processor(itemValidationProcessor())
+				.processor(compositeItemProcessor())
 				.writer(jdbcBatchItemWriter()).build();
 	}
 

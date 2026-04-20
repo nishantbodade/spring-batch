@@ -5,7 +5,7 @@ import org.springframework.batch.item.ItemProcessor;
 import com.springbatch.domain.OsProduct;
 import com.springbatch.domain.Product;
 
-public class MyProductItemProcessor implements ItemProcessor<Product, OsProduct> {
+public class TransformProductItemProcessor implements ItemProcessor<Product, OsProduct> {
 
 	@Override
 	public OsProduct process(Product item) throws Exception {

@@ -13,6 +13,7 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
@@ -37,6 +38,7 @@ import com.springbatch.domain.Product;
 import com.springbatch.domain.ProductFieldSetMapper;
 import com.springbatch.domain.ProductItemPrepareStatmentSetter;
 import com.springbatch.domain.ProductRowMapper;
+import com.springbatch.processor.MyProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 
 @Configuration
@@ -130,10 +132,17 @@ public class BatchConfiguration {
 		return itemWriter;
 		
 	}
+	
+	public ItemProcessor<Product, Product> itemProcessor(){
+		return new MyProductItemProcessor();
+	}
 
 	@Bean
 	public Step step1() throws Exception {
-		return this.stepBuilderFactory.get("chunkBaseStep1").<Product, Product>chunk(2).reader(jdbcPagingItemReader())
+		return this.stepBuilderFactory.get("chunkBaseStep1")
+				.<Product, Product>chunk(2)
+				.reader(jdbcPagingItemReader())
+				.processor(itemProcessor())
 				.writer(jdbcBatchItemWriter()).build();
 	}
 

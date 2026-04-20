@@ -39,6 +39,7 @@ import com.springbatch.domain.Product;
 import com.springbatch.domain.ProductFieldSetMapper;
 import com.springbatch.domain.ProductItemPrepareStatmentSetter;
 import com.springbatch.domain.ProductRowMapper;
+import com.springbatch.processor.FilterDataItemProcessor;
 import com.springbatch.processor.MyProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 
@@ -124,11 +125,25 @@ public class BatchConfiguration {
 		return itemWriter;
 	}
 	
+	
+	@Bean
+	public JdbcBatchItemWriter<Product> jdbcBatchItemWriter() {
+		JdbcBatchItemWriter<Product> itemWriter = new JdbcBatchItemWriter<Product>();
+		itemWriter.setDataSource(dataSource);
+		itemWriter.setSql(
+				"insert into product_details_output values(:productId,:productName,:productCategory,:productPrice)");
+		itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider());
+		return itemWriter;
+
+	}
+	 
+	
 	/*
-	 * @Bean public JdbcBatchItemWriter<Product> jdbcBatchItemWriter(){
-	 * JdbcBatchItemWriter<Product> itemWriter=new JdbcBatchItemWriter<Product>();
-	 * itemWriter.setDataSource(dataSource); itemWriter.
-	 * setSql("insert into product_details_output values(:productId,:productName,:productCategory,:productPrice)"
+	 * @Bean public JdbcBatchItemWriter<OsProduct> jdbcBatchItemWriter(){
+	 * JdbcBatchItemWriter<OsProduct> itemWriter=new
+	 * JdbcBatchItemWriter<OsProduct>(); itemWriter.setDataSource(dataSource);
+	 * itemWriter.
+	 * setSql("insert into OS_PRODUCT_DETAILS values(:productId,:productName,:productCategory,:productPrice,:taxPercent,:sku,:shippingRate)"
 	 * ); itemWriter.setItemSqlParameterSourceProvider(new
 	 * BeanPropertyItemSqlParameterSourceProvider()); return itemWriter;
 	 * 
@@ -136,25 +151,21 @@ public class BatchConfiguration {
 	 */
 	
 	@Bean
-	public JdbcBatchItemWriter<OsProduct> jdbcBatchItemWriter(){
-		JdbcBatchItemWriter<OsProduct> itemWriter=new JdbcBatchItemWriter<OsProduct>();
-		itemWriter.setDataSource(dataSource);
-		itemWriter.setSql("insert into OS_PRODUCT_DETAILS values(:productId,:productName,:productCategory,:productPrice,:taxPercent,:sku,:shippingRate)");
-		itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider());
-		return itemWriter;
-		
-	}
-	
 	public ItemProcessor<Product, OsProduct> itemProcessor(){
 		return new MyProductItemProcessor();
+	}
+	
+	@Bean
+	public ItemProcessor<Product, Product> filterDataItemProcessor(){
+		return new FilterDataItemProcessor();
 	}
 
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("chunkBaseStep1")
-				.<Product, OsProduct>chunk(2)
+				.<Product, Product>chunk(2)
 				.reader(jdbcPagingItemReader())
-				.processor(itemProcessor())
+				.processor(filterDataItemProcessor())
 				.writer(jdbcBatchItemWriter()).build();
 	}
 

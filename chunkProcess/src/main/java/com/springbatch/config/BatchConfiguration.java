@@ -11,7 +11,10 @@ import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.scope.context.ChunkContext;
+import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
@@ -35,6 +38,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import com.springbatch.domain.OsProduct;
 import com.springbatch.domain.Product;
@@ -47,13 +51,7 @@ import com.springbatch.processor.TransformProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 
 @Configuration
-@EnableBatchProcessing
 public class BatchConfiguration {
-	@Autowired
-	public JobBuilderFactory jobBuilderFactory;
-
-	@Autowired
-	public StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
 	public DataSource dataSource;
@@ -179,9 +177,9 @@ public class BatchConfiguration {
 	}
 
 	@Bean
-	public Step step1() throws Exception {
-		return this.stepBuilderFactory.get("chunkBaseStep1")
-				.<Product, OsProduct>chunk(2)
+	public Step step1(JobRepository jobRepository,PlatformTransactionManager transactionManager) throws Exception {
+		return new StepBuilder("chunkBaseStep1",jobRepository)
+				.<Product, OsProduct>chunk(2,transactionManager)
 				.reader(jdbcPagingItemReader())
 				.processor(compositeItemProcessor())
 				.writer(jdbcBatchItemWriter()).build();
@@ -189,9 +187,8 @@ public class BatchConfiguration {
 
 	
 	@Bean
-	public Job firstJob() throws Exception {
-		return this.jobBuilderFactory.get("job1").start(step1())
-
+	public Job firstJob(JobRepository jobRepository,PlatformTransactionManager transactionManager) throws Exception {
+		return new JobBuilder("job1",jobRepository).start(step1(jobRepository,transactionManager))
 				.build();
 	}
 }

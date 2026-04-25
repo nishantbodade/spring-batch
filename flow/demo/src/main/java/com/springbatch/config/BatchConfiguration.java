@@ -27,6 +27,7 @@ import com.springbatch.listener.MyStepExecutionListener;
 @Configuration
 public class BatchConfiguration {
 	
+
 	@Bean
 	public MyJobExecutionListener myJobExecutionListener() {
 		return new MyJobExecutionListener();
@@ -70,7 +71,7 @@ public class BatchConfiguration {
 				System.out.println("Job Execution Context: " + jobExecutionContext);
 				//jobExecutionContext.put("sk2", "KLM");
 				ExecutionContext stepExecutionContext = chunkContext.getStepContext().getStepExecution().getExecutionContext();
-				stepExecutionContext.put("sk2", "KLM");
+				stepExecutionContext.put("sk2", "TUV");
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).listener(promotionListener()).build();
@@ -83,6 +84,8 @@ public class BatchConfiguration {
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 				System.out.println("step3 executed on thread " + Thread.currentThread().getName());
+				ExecutionContext jobExecutionContext = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext();
+				System.out.println("Job Execution Context: " + jobExecutionContext);
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).listener(myStepExecutionListener()).build();
@@ -137,9 +140,7 @@ public class BatchConfiguration {
 				System.out.println("step7 executed on thread " + Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
-		}, transactionManger)
-				
-				.build();
+		}, transactionManger).build();
 	}
 	
 	@Bean
@@ -195,12 +196,25 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
-	public Job job1(JobRepository jobRepository, Step step1, Step step2, Step step3) {
+	public StepExecutionListener promotionListener() {
+		ExecutionContextPromotionListener promotionListener = new ExecutionContextPromotionListener();
+		promotionListener.setKeys(new String[] { "sk1", "sk2"});
+		return promotionListener;
+	}
+	
+	@Bean
+	public Job job1(JobRepository jobRepository, Step step1, Step step2, Step step3, Step step4, Step step5) {
 		return new JobBuilder("job1", jobRepository)
 				.listener(myJobExecutionListener())
 				.start(step1)
 				.next(step2)
-				.next(step3)
+				.next(decider())
+					.on("STEP_3").to(step3)
+				.from(decider())
+					.on("STEP_4").to(step4)
+				.from(decider())
+					.on("STEP_5").to(step5)
+				.end()
 				.build();
 	}
 	
@@ -219,12 +233,5 @@ public class BatchConfiguration {
 				.start(step5)
 				.next(step6)
 				.build();
-	}
-	
-	@Bean
-	public StepExecutionListener promotionListener() {
-		ExecutionContextPromotionListener promotionListener = new ExecutionContextPromotionListener();
-		promotionListener.setKeys(new String[] { "sk1", "sk2"});
-		return promotionListener;
 	}
 }

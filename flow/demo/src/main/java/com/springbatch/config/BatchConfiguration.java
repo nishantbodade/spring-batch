@@ -8,6 +8,7 @@ import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.job.flow.JobExecutionDecider;
+import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -50,10 +51,12 @@ public class BatchConfiguration {
 				System.out.println("step1 executed on thread " + Thread.currentThread().getName());
 				ExecutionContext jobExecutionContext = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext();
 				System.out.println("Job Execution Context: " + jobExecutionContext);
-				jobExecutionContext.put("sk1", "ABC");
+				//jobExecutionContext.put("sk1", "ABC");
+				ExecutionContext stepExecutionContext = chunkContext.getStepContext().getStepExecution().getExecutionContext();
+				stepExecutionContext.put("sk1", "ABC");
 				return RepeatStatus.FINISHED;
 			}
-		}, transactionManger).build();
+		}, transactionManger).listener(promotionListener()).build();
 	}
 	
 	@Bean
@@ -65,10 +68,12 @@ public class BatchConfiguration {
 				System.out.println("step2 executed on thread " + Thread.currentThread().getName());
 				ExecutionContext jobExecutionContext = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext();
 				System.out.println("Job Execution Context: " + jobExecutionContext);
-				jobExecutionContext.put("sk2", "KLM");
+				//jobExecutionContext.put("sk2", "KLM");
+				ExecutionContext stepExecutionContext = chunkContext.getStepContext().getStepExecution().getExecutionContext();
+				stepExecutionContext.put("sk2", "KLM");
 				return RepeatStatus.FINISHED;
 			}
-		}, transactionManger).build();
+		}, transactionManger).listener(promotionListener()).build();
 	}
 	
 	@Bean
@@ -214,5 +219,12 @@ public class BatchConfiguration {
 				.start(step5)
 				.next(step6)
 				.build();
+	}
+	
+	@Bean
+	public StepExecutionListener promotionListener() {
+		ExecutionContextPromotionListener promotionListener = new ExecutionContextPromotionListener();
+		promotionListener.setKeys(new String[] { "sk1", "sk2"});
+		return promotionListener;
 	}
 }

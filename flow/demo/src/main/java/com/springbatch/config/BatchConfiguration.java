@@ -15,6 +15,7 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import com.springbatch.decider.MyJobExecutionDecider;
@@ -33,13 +34,14 @@ public class BatchConfiguration {
 		return new MyJobExecutionDecider();
 	}
 	
+
 	@Bean
 	public Step step1(JobRepository jobRepository, PlatformTransactionManager transactionManger) {
 		return new StepBuilder("step1", jobRepository).tasklet(new Tasklet() {
 			
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				System.out.println("step1 executed!!");
+				System.out.println("step1 executed on thread " + Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).build();
@@ -51,7 +53,7 @@ public class BatchConfiguration {
 			
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				System.out.println("step2 executed!!");
+				System.out.println("step2 executed on thread " + Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).build();
@@ -63,7 +65,7 @@ public class BatchConfiguration {
 			
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				System.out.println("step3 executed!!");
+				System.out.println("step3 executed on thread " + Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).build();
@@ -75,20 +77,23 @@ public class BatchConfiguration {
 			
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				System.out.println("step4 executed!!");
+				System.out.println("step4 executed on thread " + Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).build();
 	}
 	
-
 	@Bean
 	public Step step5(JobRepository jobRepository, PlatformTransactionManager transactionManger) {
 		return new StepBuilder("step5", jobRepository).tasklet(new Tasklet() {
 			
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				System.out.println("step5 executed!!");
+				boolean isFailure = false;
+				if(isFailure) {
+					throw new Exception("Test Exception");
+				}
+				System.out.println("step5 executed on thread " + Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).build();
@@ -100,7 +105,7 @@ public class BatchConfiguration {
 			
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-				System.out.println("step6 executed!!");
+				System.out.println("step6 executed on thread " + Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).build();
@@ -111,13 +116,20 @@ public class BatchConfiguration {
 		return new StepBuilder("job3Step", jobRepository).job(job3).build();
 	}
 	
-	
-	
 	@Bean
 	public Flow flow1(Step step3, Step step4) {
 		FlowBuilder<Flow> flowBuilder = new FlowBuilder<>("flow1");
 		flowBuilder.start(step3)
 				.next(step4)
+				.end();
+		return flowBuilder.build();
+	}
+	
+	@Bean
+	public Flow flow2(Step step5, Step step6) {
+		FlowBuilder<Flow> flowBuilder = new FlowBuilder<>("flow2");
+		flowBuilder.start(step5)
+				.next(step6)
 				.end();
 		return flowBuilder.build();
 	}
@@ -132,12 +144,12 @@ public class BatchConfiguration {
 				.build();
 	}
 	
-
 	@Bean
-	public Job job2(JobRepository jobRepository,  Step job3Step, Flow flow1) {
+	public Job job2(JobRepository jobRepository, Step job3Step, Flow flow1, Flow flow2) {
 		return new JobBuilder("job2", jobRepository)
 				.start(flow1)
-				.next(job3Step)
+				.split(new SimpleAsyncTaskExecutor())
+				.add(flow2)
 				.end()
 				.build();
 	}

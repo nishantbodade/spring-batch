@@ -81,6 +81,32 @@ public class BatchConfiguration {
 		}, transactionManger).build();
 	}
 	
+
+	@Bean
+	public Step step5(JobRepository jobRepository, PlatformTransactionManager transactionManger) {
+		return new StepBuilder("step5", jobRepository).tasklet(new Tasklet() {
+			
+			@Override
+			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+				System.out.println("step5 executed!!");
+				return RepeatStatus.FINISHED;
+			}
+		}, transactionManger).build();
+	}
+	
+	@Bean
+	public Step step6(JobRepository jobRepository, PlatformTransactionManager transactionManger) {
+		return new StepBuilder("step6", jobRepository).tasklet(new Tasklet() {
+			
+			@Override
+			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+				System.out.println("step6 executed!!");
+				return RepeatStatus.FINISHED;
+			}
+		}, transactionManger).build();
+	}
+	
+	
 	@Bean
 	public Flow flow1(Step step3, Step step4) {
 		FlowBuilder<Flow> flowBuilder = new FlowBuilder<>("flow1");
@@ -91,11 +117,22 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
-	public Job firstJob(JobRepository jobRepository, Step step1, Step step2, Flow flow1) {
+	public Job job1(JobRepository jobRepository, Step step1, Step step2, Flow flow1) {
 		return new JobBuilder("job1", jobRepository)
 				.start(step1)
 				.next(step2)
 					.on("COMPLETED").to(flow1)
+				.end()
+				.build();
+	}
+	
+
+	@Bean
+	public Job job2(JobRepository jobRepository, Step step5, Step step6, Flow flow1) {
+		return new JobBuilder("job2", jobRepository)
+				.start(flow1)
+				.next(step5)
+				.next(step6)
 				.end()
 				.build();
 	}

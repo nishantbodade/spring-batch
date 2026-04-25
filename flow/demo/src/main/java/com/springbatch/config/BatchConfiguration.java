@@ -19,10 +19,16 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import com.springbatch.decider.MyJobExecutionDecider;
+import com.springbatch.listener.MyJobExecutionListener;
 import com.springbatch.listener.MyStepExecutionListener;
 
 @Configuration
 public class BatchConfiguration {
+	
+	@Bean
+	public MyJobExecutionListener myJobExecutionListener() {
+		return new MyJobExecutionListener();
+	}
 	
 	@Bean
 	public StepExecutionListener myStepExecutionListener() {
@@ -187,6 +193,7 @@ public class BatchConfiguration {
 	@Bean
 	public Job job2(JobRepository jobRepository, Step job3Step, Flow splitFlow) {
 		return new JobBuilder("job2", jobRepository)
+				.listener(myJobExecutionListener())
 				.start(splitFlow)
 				.end()
 				.build();

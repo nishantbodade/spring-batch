@@ -12,6 +12,7 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
+import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,6 +48,9 @@ public class BatchConfiguration {
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 				System.out.println("step1 executed on thread " + Thread.currentThread().getName());
+				ExecutionContext jobExecutionContext = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext();
+				System.out.println("Job Execution Context: " + jobExecutionContext);
+				jobExecutionContext.put("sk1", "ABC");
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).build();
@@ -59,6 +63,9 @@ public class BatchConfiguration {
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 				System.out.println("step2 executed on thread " + Thread.currentThread().getName());
+				ExecutionContext jobExecutionContext = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext();
+				System.out.println("Job Execution Context: " + jobExecutionContext);
+				jobExecutionContext.put("sk2", "KLM");
 				return RepeatStatus.FINISHED;
 			}
 		}, transactionManger).build();
@@ -183,12 +190,12 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
-	public Job job1(JobRepository jobRepository, Step step1, Step step2, Flow flow1) {
+	public Job job1(JobRepository jobRepository, Step step1, Step step2, Step step3) {
 		return new JobBuilder("job1", jobRepository)
+				.listener(myJobExecutionListener())
 				.start(step1)
 				.next(step2)
-					.on("COMPLETED").to(flow1)
-				.end()
+				.next(step3)
 				.build();
 	}
 	

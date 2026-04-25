@@ -31,7 +31,7 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
-	public StepExecutionListener myStepExecutionListener() {
+	public MyStepExecutionListener myStepExecutionListener() {
 		return new MyStepExecutionListener();
 	}
 	
@@ -73,7 +73,7 @@ public class BatchConfiguration {
 				System.out.println("step3 executed on thread " + Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
-		}, transactionManger).build();
+		}, transactionManger).listener(myStepExecutionListener()).build();
 	}
 	
 	@Bean
@@ -125,7 +125,9 @@ public class BatchConfiguration {
 				System.out.println("step7 executed on thread " + Thread.currentThread().getName());
 				return RepeatStatus.FINISHED;
 			}
-		}, transactionManger).build();
+		}, transactionManger)
+				
+				.build();
 	}
 	
 	@Bean

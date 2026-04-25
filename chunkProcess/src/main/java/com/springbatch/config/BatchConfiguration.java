@@ -46,6 +46,7 @@ import com.springbatch.domain.ProductFieldSetMapper;
 import com.springbatch.domain.ProductItemPrepareStatmentSetter;
 import com.springbatch.domain.ProductRowMapper;
 import com.springbatch.domain.ProductValidator;
+import com.springbatch.listener.MyChunkListener;
 import com.springbatch.processor.FilterDataItemProcessor;
 import com.springbatch.processor.TransformProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
@@ -182,13 +183,19 @@ public class BatchConfiguration {
 				.<Product, OsProduct>chunk(2,transactionManager)
 				.reader(jdbcPagingItemReader())
 				.processor(compositeItemProcessor())
-				.writer(jdbcBatchItemWriter()).build();
+				.writer(jdbcBatchItemWriter())
+				.listener(myChunkListener())
+				.build();
 	}
 
+	@Bean
+	public MyChunkListener myChunkListener() {
+		return new MyChunkListener();
+	}
 	
 	@Bean
-	public Job firstJob(JobRepository jobRepository,PlatformTransactionManager transactionManager) throws Exception {
-		return new JobBuilder("job1",jobRepository).start(step1(jobRepository,transactionManager))
+	public Job firstJob(JobRepository jobRepository,Step step1) throws Exception {
+		return new JobBuilder("job1",jobRepository).start(step1)
 				.build();
 	}
 }

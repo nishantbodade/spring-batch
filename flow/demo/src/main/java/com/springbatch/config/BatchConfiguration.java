@@ -34,7 +34,6 @@ public class BatchConfiguration {
 		return new MyJobExecutionDecider();
 	}
 	
-
 	@Bean
 	public Step step1(JobRepository jobRepository, PlatformTransactionManager transactionManger) {
 		return new StepBuilder("step1", jobRepository).tasklet(new Tasklet() {
@@ -112,6 +111,30 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
+	public Step step7(JobRepository jobRepository, PlatformTransactionManager transactionManger) {
+		return new StepBuilder("step7", jobRepository).tasklet(new Tasklet() {
+			
+			@Override
+			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+				System.out.println("step7 executed on thread " + Thread.currentThread().getName());
+				return RepeatStatus.FINISHED;
+			}
+		}, transactionManger).build();
+	}
+	
+	@Bean
+	public Step step8(JobRepository jobRepository, PlatformTransactionManager transactionManger) {
+		return new StepBuilder("step8", jobRepository).tasklet(new Tasklet() {
+			
+			@Override
+			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+				System.out.println("step8 executed on thread " + Thread.currentThread().getName());
+				return RepeatStatus.FINISHED;
+			}
+		}, transactionManger).build();
+	}
+	
+	@Bean
 	public Step job3Step(JobRepository jobRepository, Job job3) {
 		return new StepBuilder("job3Step", jobRepository).job(job3).build();
 	}
@@ -135,6 +158,23 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
+	public Flow flow3(Step step7, Step step8) {
+		FlowBuilder<Flow> flowBuilder = new FlowBuilder<>("flow3");
+		flowBuilder.start(step7)
+				.next(step8)
+				.end();
+		return flowBuilder.build();
+	}
+	
+	@Bean
+	public Flow splitFlow(Flow flow1, Flow flow2, Flow flow3) {
+		return new FlowBuilder<Flow>("splitFlow")
+				.split(new SimpleAsyncTaskExecutor())
+				.add(flow1, flow2, flow3)
+				.build();
+	}
+	
+	@Bean
 	public Job job1(JobRepository jobRepository, Step step1, Step step2, Flow flow1) {
 		return new JobBuilder("job1", jobRepository)
 				.start(step1)
@@ -145,11 +185,9 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
-	public Job job2(JobRepository jobRepository, Step job3Step, Flow flow1, Flow flow2) {
+	public Job job2(JobRepository jobRepository, Step job3Step, Flow splitFlow) {
 		return new JobBuilder("job2", jobRepository)
-				.start(flow1)
-				.split(new SimpleAsyncTaskExecutor())
-				.add(flow2)
+				.start(splitFlow)
 				.end()
 				.build();
 	}

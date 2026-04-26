@@ -41,6 +41,7 @@ import com.springbatch.domain.Product;
 import com.springbatch.domain.ProductFieldSetMapper;
 import com.springbatch.domain.ProductRowMapper;
 import com.springbatch.domain.ProductValidator;
+import com.springbatch.exception.MyException;
 import com.springbatch.listener.MyChunkListener;
 import com.springbatch.listener.MyItemProcessListener;
 import com.springbatch.listener.MyItemReadListener;
@@ -50,7 +51,7 @@ import com.springbatch.processor.FilterProductItemProcessor;
 import com.springbatch.processor.TransformProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 
-import skippolicy.MySkipPolicy;
+import com.springbatch.skippolicy.MySkipPolicy;
 
 @Configuration
 public class BatchConfiguration {
@@ -226,9 +227,10 @@ public class BatchConfiguration {
 				.processor(itemProcessor())
 				.writer(jdbcBatchItemWriter())
 				.faultTolerant()
-				.skipPolicy(mySkipPolicy())
+				.retry(MyException.class)
+				.retryLimit(4)
 				.listener(mySkipListener())
-//				.listener(myChunkListener())
+				.listener(myChunkListener())
 //				.listener(myItemReadListener())
 //				.listener(myItemProcessListener())
 //				.listener(myItemWriteListener())

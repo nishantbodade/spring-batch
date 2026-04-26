@@ -10,8 +10,8 @@ public class Product {
 	private String productName;
 	//@Pattern(regexp = "Mobile Phones|Tablets|Televisions|Sports Accessories")
 	private String productCategory;
-	@Min(0)
-	@Max(100000)
+//	@Min(0)
+//	@Max(100000)
 	private Integer productPrice;
 	
 	public Integer getProductId() {

@@ -27,6 +27,7 @@ import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.item.support.CompositeItemProcessor;
 import org.springframework.batch.item.validator.BeanValidatingItemProcessor;
 import org.springframework.batch.item.validator.ValidatingItemProcessor;
+import org.springframework.batch.item.validator.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -168,7 +169,7 @@ public class BatchConfiguration {
 	@Bean
 	public BeanValidatingItemProcessor<Product> validateProductItemProcessor() {
 		BeanValidatingItemProcessor<Product> beanValidatingItemProcessor = new BeanValidatingItemProcessor<>();
-		beanValidatingItemProcessor.setFilter(true);
+		//beanValidatingItemProcessor.setFilter(true);
 		return beanValidatingItemProcessor;
 	}
 	
@@ -207,13 +208,16 @@ public class BatchConfiguration {
 	public Step step1(JobRepository jobRespository, PlatformTransactionManager transactionManager) throws Exception {
 		return new StepBuilder("chunkBasedStep1", jobRespository)
 				.<Product,OSProduct>chunk(3, transactionManager)
-				.reader(jdbcPagingItemReader())
+				.reader(flatFileItemReader())
 				.processor(itemProcessor())
 				.writer(jdbcBatchItemWriter())
-				.listener(myChunkListener())
-				.listener(myItemReadListener())
-				.listener(myItemProcessListener())
-				.listener(myItemWriteListener())
+				.faultTolerant()
+				.skip(ValidationException.class)
+				.skipLimit(2)
+//				.listener(myChunkListener())
+//				.listener(myItemReadListener())
+//				.listener(myItemProcessListener())
+//				.listener(myItemWriteListener())
 				.build();
 	}
 	

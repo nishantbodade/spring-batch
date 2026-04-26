@@ -1,14 +1,16 @@
 package com.springbatch.domain;
 
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 
 public class Product {
 
 	private Integer productId;
 	private String productName;
-	@Pattern(regexp = "Mobile Phones|Tablets|Televisions|Sports Accessories")
+	//@Pattern(regexp = "Mobile Phones|Tablets|Televisions|Sports Accessories")
 	private String productCategory;
+	@Min(0)
 	@Max(100000)
 	private Integer productPrice;
 	

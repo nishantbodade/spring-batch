@@ -1,5 +1,7 @@
 package com.springbatch.processor;
 
+import java.util.Random;
+
 import org.springframework.batch.item.ItemProcessor;
 
 import com.springbatch.domain.Product;
@@ -15,7 +17,8 @@ public class FilterProductItemProcessor implements ItemProcessor<Product, Produc
 //		} else {
 //			return null;
 //		}
-		if(item.getProductPrice() == 500) {
+		Random random = new Random();
+		if(item.getProductPrice() == 500 && random.nextInt(3) == 2) {
 			System.out.println("Exception Thrown");
 			throw new MyException("Test Exception");
 		}

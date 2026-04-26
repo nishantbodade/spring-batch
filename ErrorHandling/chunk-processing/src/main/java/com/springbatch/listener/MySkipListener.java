@@ -4,6 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import org.springframework.batch.core.SkipListener;
+import org.springframework.batch.item.file.FlatFileParseException;
 
 import com.springbatch.domain.OSProduct;
 import com.springbatch.domain.Product;
@@ -12,8 +13,11 @@ public class MySkipListener implements SkipListener<Product, OSProduct> {
 
 	@Override
 	public void onSkipInRead(Throwable t) {
-		// TODO Auto-generated method stub
-		SkipListener.super.onSkipInRead(t);
+		if(t instanceof FlatFileParseException) {
+			System.out.println("Skipped Item:- ");
+			System.out.println(((FlatFileParseException)t).getInput());
+			writeToFile(((FlatFileParseException)t).getInput());
+		}
 	}
 
 	@Override

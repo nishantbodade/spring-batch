@@ -44,6 +44,7 @@ import com.springbatch.listener.MyChunkListener;
 import com.springbatch.listener.MyItemProcessListener;
 import com.springbatch.listener.MyItemReadListener;
 import com.springbatch.listener.MyItemWriteListener;
+import com.springbatch.listener.MySkipListener;
 import com.springbatch.processor.FilterProductItemProcessor;
 import com.springbatch.processor.TransformProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
@@ -205,6 +206,11 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
+	public MySkipListener mySkipListener() {
+		return new MySkipListener();
+	}
+	
+	@Bean
 	public Step step1(JobRepository jobRespository, PlatformTransactionManager transactionManager) throws Exception {
 		return new StepBuilder("chunkBasedStep1", jobRespository)
 				.<Product,OSProduct>chunk(3, transactionManager)
@@ -214,6 +220,7 @@ public class BatchConfiguration {
 				.faultTolerant()
 				.skip(ValidationException.class)
 				.skipLimit(2)
+				.listener(mySkipListener())
 //				.listener(myChunkListener())
 //				.listener(myItemReadListener())
 //				.listener(myItemProcessListener())

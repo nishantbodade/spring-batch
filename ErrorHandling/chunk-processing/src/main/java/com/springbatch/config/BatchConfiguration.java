@@ -50,6 +50,8 @@ import com.springbatch.processor.FilterProductItemProcessor;
 import com.springbatch.processor.TransformProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 
+import skippolicy.MySkipPolicy;
+
 @Configuration
 public class BatchConfiguration {
 	
@@ -212,6 +214,11 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
+	public MySkipPolicy mySkipPolicy() {
+		return new MySkipPolicy();
+	}
+	
+	@Bean
 	public Step step1(JobRepository jobRespository, PlatformTransactionManager transactionManager) throws Exception {
 		return new StepBuilder("chunkBasedStep1", jobRespository)
 				.<Product,OSProduct>chunk(3, transactionManager)
@@ -219,9 +226,7 @@ public class BatchConfiguration {
 				.processor(itemProcessor())
 				.writer(jdbcBatchItemWriter())
 				.faultTolerant()
-				.skip(ValidationException.class)
-				.skip(FlatFileParseException.class)
-				.skipLimit(3)
+				.skipPolicy(mySkipPolicy())
 				.listener(mySkipListener())
 //				.listener(myChunkListener())
 //				.listener(myItemReadListener())
